@@ -1,0 +1,3 @@
+fastapi[standard]
+uvicorn[standard]
+neo4j
