@@ -1,14 +1,10 @@
-from fastapi import FastAPI
-from functools import lru_cache
-from config import Settings
+from fastapi import FastAPI, Depends
 from database import get_db
-from fastapi import APIRouter, HTTPException, Depends
 from neo4j import Session
-
-app = FastAPI()
-
 import config
 from functools import lru_cache
+
+app = FastAPI()
 
 @lru_cache
 def get_settings():
@@ -18,7 +14,6 @@ Settings = get_settings()
 
 @app.get("/")
 def read_root():
-    print(Settings)
     return {"Hello": "World"}
 
 @app.get("/db")
