@@ -25,4 +25,4 @@ class Order(BaseModel):
     product_id: int
     quantity: int = 1
     price_at_purchase: float
-    timestamp: int 
+    timestamp: int
