@@ -1,10 +1,9 @@
 from pydantic import BaseModel
 from typing import List
 
-class User(BaseModel):
-    id: int
+class UserBase(BaseModel):
     name: str
-    phone: str
+    phone: int
     contact:List[str] = []
 
 class Order(BaseModel):
