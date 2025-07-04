@@ -7,12 +7,19 @@ class UserBase(BaseModel):
     contact:List[str] = []
 
 class Order(BaseModel):
-    id: int
     user_id: int
     product_id: int
-    quantity: int    
+    quantity: int = 1
+    price_at_purchase: float
+    timestamp: int  
 
 class Product(BaseModel):
-    id: int
     name: str
-    price: float    
+    description: str
+    price: float
+    category_id: str   
+
+class Category(BaseModel):
+    category_id: str
+    name: str
+    products_id: List[int]

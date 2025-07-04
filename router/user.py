@@ -69,6 +69,148 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
     MATCH (u:User {user_id: $user_id})
     DETACH DELETE u
     """
-    db.run(delete_query, user_id=user_id)
+    try:
+        db.run(delete_query, user_id=user_id)
+        return {"detail": "User deleted successfully."}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred while deleting the user: {e}"
+        )
 
-    return
+
+#create category
+@router.post("/create_categories", status_code=status.HTTP_201_CREATED)
+def create_category(category: UserBase, db: Session = Depends(get_db)):
+    check_query = """
+    MATCH (c:Category)
+    WHERE c.name = $name
+    RETURN c
+    """
+    existing_category = db.run(check_query, name=category.name).single()
+
+    if existing_category:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A category with the name '{category.name}' already exists."
+        )
+
+    create_category_query = """
+    CREATE (c:Category {
+        category_id: $category_id,
+        name: $name,
+        products_id: []
+    })
+    RETURN c
+    """
+    params = {
+        "category_id": str(uuid.uuid4()), # Generate a unique ID by self
+        "name": category.name,
+        "products_id": category.contact  
+    }
+    try:
+        result = db.run(create_category_query, params)
+        created_category_record = result.single()
+
+        return created_category_record.data()['c']
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}" 
+        )
+
+
+# create product
+@router.post("/products", status_code=status.HTTP_201_CREATED)
+def create_product(product: UserBase, db: Session = Depends(get_db)):
+    check_query = """
+    MATCH (p:Product)
+    WHERE p.name = $name
+    RETURN p
+    """
+    existing_product = db.run(check_query, name=product.name).single()
+
+    if existing_product:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A product with the name '{product.name}' already exists."
+        )
+
+    create_product_query = """
+    CREATE (p:Product {
+        product_id: $product_id,
+        name: $name,
+        description: $description,
+        price: $price
+        category_id: $category_id
+    })
+    RETURN p
+    """
+    params = {
+        "product_id": str(uuid.uuid4()),
+        "name": product.name,
+        "price": product.price
+    }
+
+    try:
+        result = db.run(create_product_query, params)
+        created_product_record = result.single()
+
+        return created_product_record.data()['p']
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}" 
+        )
+
+
+# get user 
+@router.get("/get_users", status_code=status.HTTP_200_OK)
+def get_users(db: Session = Depends(get_db)):
+    query = """
+    MATCH (u:User)
+    RETURN u
+    """
+    try:
+        result = db.run(query)
+        users = [record.data()['u'] for record in result]
+        if not users:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No users found."
+            )
+        
+        return users
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
+
+
+# get any product by id
+@router.get("/get_products", status_code=status.HTTP_200_OK)
+def get_products(db: Session = Depends(get_db)):
+    query = """
+    MATCH (p:Product)
+    RETURN p
+    """
+
+    try:
+        result = db.run(query)
+        products = [record.data()['p'] for record in result]
+        if not products:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No products found."
+            )
+        
+        return products
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
+
