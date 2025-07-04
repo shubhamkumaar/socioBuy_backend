@@ -6,6 +6,7 @@ from schemas.schema import UserBase
 
 router = APIRouter()
 
+# create user
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserBase, db: Session = Depends(get_db)):
 
@@ -76,47 +77,6 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An internal server error occurred while deleting the user: {e}"
-        )
-
-
-#create category
-@router.post("/create_categories", status_code=status.HTTP_201_CREATED)
-def create_category(category: UserBase, db: Session = Depends(get_db)):
-    check_query = """
-    MATCH (c:Category)
-    WHERE c.name = $name
-    RETURN c
-    """
-    existing_category = db.run(check_query, name=category.name).single()
-
-    if existing_category:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A category with the name '{category.name}' already exists."
-        )
-
-    create_category_query = """
-    CREATE (c:Category {
-        category_id: $category_id,
-        name: $name,
-        products_id: []
-    })
-    RETURN c
-    """
-    params = {
-        "category_id": str(uuid.uuid4()), # Generate a unique ID by self
-        "name": category.name,
-        "products_id": category.contact  
-    }
-    try:
-        result = db.run(create_category_query, params)
-        created_category_record = result.single()
-
-        return created_category_record.data()['c']
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred: {e}" 
         )
 
 

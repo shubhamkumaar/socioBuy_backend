@@ -7,7 +7,6 @@ from schemas.schema import UserBase
 router = APIRouter()
 
 
-
 # create product
 @router.post("/products", status_code=status.HTTP_201_CREATED)
 def create_product(product: UserBase, db: Session = Depends(get_db)):
@@ -53,7 +52,7 @@ def create_product(product: UserBase, db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}" 
         )
 
-
+# get all products
 @router.get("/get_products", status_code=status.HTTP_200_OK)
 def get_products(db: Session = Depends(get_db)):
     query = """

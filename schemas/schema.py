@@ -23,3 +23,7 @@ class Category(BaseModel):
     category_id: str
     name: str
     products_id: List[int]
+
+
+class AddProducts(BaseModel):
+    product_ids: List[str]
