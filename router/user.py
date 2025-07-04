@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session
 from schemas.schema import UserBase
-import uuid
+
 
 router = APIRouter()
 
@@ -120,51 +120,6 @@ def create_category(category: UserBase, db: Session = Depends(get_db)):
         )
 
 
-# create product
-@router.post("/products", status_code=status.HTTP_201_CREATED)
-def create_product(product: UserBase, db: Session = Depends(get_db)):
-    check_query = """
-    MATCH (p:Product)
-    WHERE p.name = $name
-    RETURN p
-    """
-    existing_product = db.run(check_query, name=product.name).single()
-
-    if existing_product:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A product with the name '{product.name}' already exists."
-        )
-
-    create_product_query = """
-    CREATE (p:Product {
-        product_id: $product_id,
-        name: $name,
-        description: $description,
-        price: $price
-        category_id: $category_id
-    })
-    RETURN p
-    """
-    params = {
-        "product_id": str(uuid.uuid4()),
-        "name": product.name,
-        "price": product.price
-    }
-
-    try:
-        result = db.run(create_product_query, params)
-        created_product_record = result.single()
-
-        return created_product_record.data()['p']
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred: {e}" 
-        )
-
-
 # get user 
 @router.get("/get_users", status_code=status.HTTP_200_OK)
 def get_users(db: Session = Depends(get_db)):
@@ -183,31 +138,6 @@ def get_users(db: Session = Depends(get_db)):
         
         return users
     
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred: {e}"
-        )
-
-
-# get any product by id
-@router.get("/get_products", status_code=status.HTTP_200_OK)
-def get_products(db: Session = Depends(get_db)):
-    query = """
-    MATCH (p:Product)
-    RETURN p
-    """
-
-    try:
-        result = db.run(query)
-        products = [record.data()['p'] for record in result]
-        if not products:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No products found."
-            )
-        
-        return products
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
