@@ -6,7 +6,7 @@ from schemas.schema import UserBase
 
 router = APIRouter()
 
-# create category
+#create category
 @router.post("/create_categories", status_code=status.HTTP_201_CREATED)
 def create_category(category: UserBase, db: Session = Depends(get_db)):
     check_query = """
@@ -47,7 +47,7 @@ def create_category(category: UserBase, db: Session = Depends(get_db)):
         )
 
 
-# get all categories
+#get all categories
 @router.get("/get_categories", status_code=status.HTTP_200_OK)
 def get_categories(db: Session = Depends(get_db)):
     query = """
