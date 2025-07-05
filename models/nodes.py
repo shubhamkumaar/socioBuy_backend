@@ -7,6 +7,8 @@ class User(BaseModel):
     name: str
     phone: str
     contact:List[str] = []
+    email: str
+    password: str
 
 class Category(BaseModel):
     category_id: str

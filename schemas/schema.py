@@ -1,10 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List
 
 class UserBase(BaseModel):
     name: str
-    phone: int
-    contact:List[str] = []
+    phone: str
+    contact:List[int] = []
+    email: EmailStr
+    password: str
 
 class Order(BaseModel):
     user_id: int
@@ -27,3 +29,16 @@ class Category(BaseModel):
 
 class AddProducts(BaseModel):
     product_ids: List[str]
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserOut(BaseModel):
+    name: str
+    phone: str
+    contact: List[int]
+    email: EmailStr
+
+class Config:
+    from_attributes = True

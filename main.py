@@ -4,6 +4,7 @@ from neo4j import Session
 import config
 from functools import lru_cache
 from router.user import router as user_router 
+from router.login import router as login_router
 app = FastAPI()
 
 @lru_cache
@@ -13,6 +14,9 @@ def get_settings():
 Settings = get_settings()
 
 app.include_router(user_router)
+
+app.include_router(login_router)
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}

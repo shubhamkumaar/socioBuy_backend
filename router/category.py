@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session
 from schemas.schema import UserBase
-
+import uuid
 
 router = APIRouter()
 
-#create category
+# create category
 @router.post("/create_categories", status_code=status.HTTP_201_CREATED)
 def create_category(category: UserBase, db: Session = Depends(get_db)):
     check_query = """
@@ -47,7 +47,7 @@ def create_category(category: UserBase, db: Session = Depends(get_db)):
         )
 
 
-#get all categories
+# get all categories
 @router.get("/get_categories", status_code=status.HTTP_200_OK)
 def get_categories(db: Session = Depends(get_db)):
     query = """
@@ -58,6 +58,7 @@ def get_categories(db: Session = Depends(get_db)):
         result = db.run(query)
         categories = [record.data()['c'] for record in result]
         return categories
+    
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -162,3 +163,4 @@ def add_products_to_category(category_id: str,AddProducts: UserBase,db: Session 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An internal server error occurred while creating relationships: {e}"
         )
+    

@@ -6,13 +6,12 @@ from schemas.schema import UserBase
 
 router = APIRouter()
 
-# create user
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserBase, db: Session = Depends(get_db)):
 
     check_query = """
     MATCH (u:User)
-    WHERE u.name = $name OR u.phone = $phone
+    WHERE u.name = $name OR u.email = $email
     RETURN u
     """
     existing_user = db.run(check_query, name=user.name, phone=user.phone).single()
@@ -25,18 +24,18 @@ def create_user(user: UserBase, db: Session = Depends(get_db)):
 
     create_user_query = """
     CREATE (u:User {
-        user_id: $user_id,
         name: $name,
         phone: $phone,
-        contact: $contact
+        contact: $contact,
+        email: $email
     })
     RETURN u
     """
     params = {
-        "user_id": str(uuid.uuid4()),
         "name": user.name,
         "phone": user.phone,
-        "contact": user.contact
+        "contact": user.contact,
+        "email": user.email
     }
 
     try:
