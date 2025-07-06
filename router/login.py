@@ -119,7 +119,15 @@ def register(user: UserBase, db: Session = Depends(get_db)):
     try:
         result = db.run(create_user_query, params)
         created_user_record = result.single()
-        return created_user_record['u']
+        user = created_user_record['u']
+        return UserOut(
+            success=True,
+            message="Hello " + user['name'] + "!",
+            name=user['name'],
+            email=user['email'],
+            token=create_access_token(data={"sub": user['email']}),
+            phone=user['phone']
+        )
     except Exception as e:
         print(f"ERROR: Could not register user: {e}")
         raise HTTPException(
