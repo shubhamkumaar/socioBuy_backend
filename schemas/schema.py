@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List,Optional
 
 class UserBase(BaseModel):
     name: str
@@ -35,10 +35,13 @@ class UserLogin(BaseModel):
     password: str
 
 class UserOut(BaseModel):
+    success: bool
+    message: str
+    token: Optional[str] = None 
     name: str
-    phone: str
-    contact: List[int]
     email: EmailStr
+    phone: str
+    
 
 class Config:
     from_attributes = True

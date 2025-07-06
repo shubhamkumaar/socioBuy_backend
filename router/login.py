@@ -81,18 +81,14 @@ def login(user_credentials: UserLogin, response: Response, db: Session = Depends
         )
 
     access_token = create_access_token(data={"sub": user_data['email']})
-
-    response.set_cookie(
-        key=ACCESS_TOKEN_COOKIE_NAME,
-        value=access_token,
-        httponly=True,
-        samesite="lax",
-        secure=True,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    return UserOut(
+        success=True,
+        token=access_token,
+        message="Hello " + user_data['name'] + "!",
+        name=user_data['name'],
+        email=user_data['email'],
+        phone=user_data['phone']
     )
-
-    return user_data
-
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user: UserBase, db: Session = Depends(get_db)):
