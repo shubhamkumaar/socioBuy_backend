@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session
-from schemas.schema import UserBase
-
-
+from schemas.schema import UserBase, User
+from typing import Annotated
+from .login import verify_jwt_token
 router = APIRouter()
+
+user_dependency = Annotated[User, Depends(verify_jwt_token)]
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserBase, db: Session = Depends(get_db)):
@@ -103,3 +105,45 @@ def get_users(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+@router.post("/import_contacts", status_code=status.HTTP_201_CREATED)
+def import_contacts(contacts: str, user: user_dependency,db: Session = Depends(get_db)):
+    print(f"Importing contacts: {contacts}") 
+    # for contact in contacts:
+    #     check_query = """
+    #     MATCH (u:User)
+    #     WHERE u.name = $name OR u.phone = $phone
+    #     RETURN u
+    #     """
+    #     existing_user = db.run(check_query, name=contact.name, phone=contact.phone).single()
+
+    #     if existing_user:
+    #         continue
+    #     create_user_query = """
+    #     CREATE (u:User {
+    #         name: $name,
+    #         phone: $phone,
+    #         contact: $contact,
+    #         email: $email
+    #     })
+    #     RETURN u
+    #     """
+    #     params = {
+    #         "name": contact.name,
+    #         "phone": contact.phone,
+    #         "contact": contact.contact,
+    #         "email": contact.email
+    #     }
+    #     try:
+    #         result = db.run(create_user_query, params)
+    #         created_user_record = result.single()
+    #         if created_user_record is None:
+    #             raise HTTPException(
+    #                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #                 detail="Failed to create user."
+    #             )
+    #     except Exception as e:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail=f"An internal server error occurred while importing contacts: {e}"
+    #         )
+    return {"detail": contacts}
