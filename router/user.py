@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session
 from schemas.schema import UserBase
-
+from typing import List, Dict
 
 router = APIRouter()
 
@@ -103,3 +103,35 @@ def get_users(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+
+
+#get user contacts list from user contacts
+@router.get("/get_user_contacts", status_code=status.HTTP_200_OK)
+def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
+
+    query = """
+    MATCH (u:User)
+    SET u.contact = $newContacts 
+    RETURN u
+    """
+
+    parameters = {
+            "newContacts": user_contact
+        }
+    try:
+        result = db.run(query, parameters)
+        updated_user = result.single()
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        
+        return updated_user.data()['u']
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
+    
