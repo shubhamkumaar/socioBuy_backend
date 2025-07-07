@@ -1,6 +1,20 @@
 from pydantic import BaseModel, EmailStr
-from typing import List,Optional
+from typing import List, Optional
 from datetime import datetime
+from enum import Enum
+
+class User(BaseModel):
+    user_id: str
+    name: str
+    phone: str
+    email: EmailStr
+    
+class OrderStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
 
 class UserBase(BaseModel):
     name: str
@@ -9,24 +23,24 @@ class UserBase(BaseModel):
     email: EmailStr
     password: str
 
-class Order(BaseModel):
-    user_id: int
-    product_id: int
-    quantity: int = 1
-    price_at_purchase: float
-    timestamp: int  
+class UserInDB(BaseModel):
+    user_id: str 
+    name: str
+    phone: str
+    email: EmailStr
+    contact: List[int] = [] 
 
 class Product(BaseModel):
+    product_id: str
     name: str
     description: str
     price: float
-    category_id: str   
+    category_id: str
 
 class Category(BaseModel):
     category_id: str
     name: str
     products_id: List[int]
-
 
 class AddProducts(BaseModel):
     product_ids: List[str]
@@ -38,11 +52,10 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     success: bool
     message: str
-    token: Optional[str] = None 
+    token: Optional[str] = None
     name: str
     email: EmailStr
     phone: str
-    
 
 class Config:
     from_attributes = True
@@ -50,33 +63,28 @@ class Config:
 class ContactsUploadRequest(BaseModel):
     contacts: List[int]
 
-
-class OrderItemRequest(BaseModel):
-    product_name: str
+class OrderItemCreateRequest(BaseModel):
     product_id: str
     quantity: int = 1
 
-class OrderResponse(BaseModel):
-    order_id: str
-    user_id: str
-    products: List[OrderItemRequest]
-    total_price: float
-    timestamp: int
+class OrderItemInDB(BaseModel):
+    product_id: str
+    product_name: str
+    product_price_at_order: float
+    quantity: int
 
 class OrderCreate(BaseModel):
     user_id: str
-    items: List[OrderItemRequest]
+    items: List[OrderItemCreateRequest]
 
-class OrderCreateResponse(BaseModel):
-    success: bool
-    message: str
-    order_id: Optional[str] = None
+class OrderStatusUpdate(BaseModel):
+    status: OrderStatus
 
 class OrderInDB(BaseModel):
     order_id: str
     user_id: str
-    username: str
-    order_date: datetime 
-    status: OrderCreateResponse
+    username: str 
+    order_date: datetime
+    status: OrderStatus
     total_amount: float
-    items: List[OrderResponse]
+    items: List[OrderItemInDB]

@@ -1,24 +1,26 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
-from neo4j import Session
+from neo4j import Session,AsyncSession
 from schemas.schema import UserBase
-from schemas.schema import User
-from typing import Annotated
+from schemas.schema import User,Product
+from typing import Annotated,List, Optional
 from .login import verify_jwt_token
-
+from uuid import uuid4 
 router = APIRouter(tags=["Product Management"], prefix="/products")
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
 
 # create product
-@router.post("/products", status_code=status.HTTP_201_CREATED)
-def create_product(product: UserBase, db: Session = Depends(get_db)):
+
+@router.post("/", response_model=Product, status_code=status.HTTP_201_CREATED, summary="Create a new product")
+async def create_product_endpoint(product: Product, db: AsyncSession = Depends(get_db)):
     check_query = """
     MATCH (p:Product)
     WHERE p.name = $name
     RETURN p
     """
-    existing_product = db.run(check_query, name=product.name).single()
+    check_result = await db.run(check_query, name=product.name)
+    existing_product = await check_result.single()
 
     if existing_product:
         raise HTTPException(
@@ -26,17 +28,20 @@ def create_product(product: UserBase, db: Session = Depends(get_db)):
             detail=f"A product with the name '{product.name}' already exists."
         )
 
+    product_id = str(uuid4()) 
+
     create_product_query = """
     CREATE (p:Product {
+        product_id: $product_id,
         name: $name,
         description: $description,
-        price: $price
+        price: $price,
         category_id: $category_id
     })
-    RETURN p
+    RETURN p.product_id AS product_id, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
     """
     params = {
-
+        "product_id": product_id, 
         "name": product.name,
         "price": product.price,
         "description": product.description,
@@ -44,34 +49,54 @@ def create_product(product: UserBase, db: Session = Depends(get_db)):
     }
 
     try:
-        result = db.run(create_product_query, params)
-        created_product_record = result.single()
+        result = await db.run(create_product_query, params)
+        created_product_record = await result.single()
 
-        return created_product_record.data()['p']
+        if created_product_record:
+            return Product(
+                product_id=created_product_record["product_id"],
+                name=created_product_record["name"],
+                description=created_product_record["description"],
+                price=created_product_record["price"],
+                category_id=created_product_record["category_id"]
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create product record in the database."
+        )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred: {e}" 
+            detail=f"An internal server error occurred: {e}"
         )
 
-# get all products
-@router.get("/get_products", status_code=status.HTTP_200_OK)
-def get_products(db: Session = Depends(get_db)):
+
+@router.get("/", response_model=List[Product], status_code=status.HTTP_200_OK, summary="Get all products")
+async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)): 
     query = """
     MATCH (p:Product)
-    RETURN p
+    RETURN p.product_id AS product_id, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
     """
 
     try:
-        result = db.run(query)
-        products = [record.data()['p'] for record in result]
+        result = await db.run(query)
+        products = []
+        async for record in result:
+            products.append(Product(
+                product_id=record["product_id"],
+                name=record["name"],
+                description=record["description"],
+                price=record["price"],
+                category_id=record["category_id"]
+            ))
+
         if not products:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No products found."
             )
-        
+
         return products
     except Exception as e:
         raise HTTPException(
