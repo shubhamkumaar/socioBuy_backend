@@ -5,8 +5,8 @@ from schemas.schema import UserBase, User
 from typing import Annotated
 from .login import verify_jwt_token
 from schemas.schema import UserBase
-from typing import List, Dict
-
+import json
+import re
 router = APIRouter()
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
@@ -138,7 +138,91 @@ def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+def process_contact(contacts: str): # Renamed parameter for clarity
+    """
+    Imports contacts from a JSON string, validates them, cleans phone numbers,
+    and filters out malformed entries, helpline numbers, and invalid formats.
+
+    Args:
+        contacts_json_string (str): A JSON string containing a list of contacts.
+                                    Expected format: {"contacts": [{"name": "...", "number": "..."}, ...]}
+
+    Returns:
+        dict: A dictionary containing a list of successfully processed contacts
+              under the "detail" key.
+
+    Raises:
+        HTTPException: If the input string is not a valid JSON format.
+    """
+    print(f"Received contacts string: {contacts}")
+
+    parsed_contacts_data = {}
+    try:
+        # This line is correct for parsing the incoming JSON string from a POST request body
+        parsed_contacts_data = json.loads(contacts)
+    except json.JSONDecodeError as e:
+        # Raise an HTTPException if the JSON is invalid
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid JSON format: {e}"
+        )
+
+    # Get the raw list of contact entries from the parsed dictionary
+    raw_contact_entries = parsed_contacts_data.get("contacts", [])
+    
+    parsed_contacts_data = {}
+    try:
+        parsed_contacts_data = json.loads(contacts)
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid JSON format: {e}"
+        )
+
+    raw_contact_entries = parsed_contacts_data.get("contacts", [])
+    INDIAN_MOBILE_FORMAT_PATTERN = re.compile(r"^[6-9]\d{9}$")
+    processed_contacts = []
+
+    for entry in raw_contact_entries:
+        # 1. Ensure the entry is a dictionary
+        if not isinstance(entry, dict):
+            continue
+
+        # 2. Extract name and number, handling potential missing keys
+        name_raw = entry.get('name')
+        number_raw = entry.get('number')
+
+        # 3. Validate and clean name: Must be a non-empty string after stripping whitespace
+        if not isinstance(name_raw, str) or not name_raw.strip():
+            continue
+        name = name_raw.strip()
+
+        # 4. Validate and clean phone number: Must be a non-empty string after stripping whitespace
+        if not isinstance(number_raw, str) or not number_raw.strip():
+            continue
+
+        # Start with the raw number, stripped of leading/trailing whitespace
+        current_phone_number = number_raw.strip()
+
+        # 5. Remove '+91' prefix if present from the number *before* normalization for validation
+        if current_phone_number.startswith('+91'):
+            current_phone_number = current_phone_number[3:].strip() # Remove '+91' and strip any extra whitespace
+
+        # 6. Normalize phone number to digits only for validation and helpline check
+        normalized_phone_number = re.sub(r'\D', '', current_phone_number)
+
+        # 7. Validate phone number format (10 digits, starts with 6-9)
+        if not INDIAN_MOBILE_FORMAT_PATTERN.match(normalized_phone_number):
+            continue
+
+        # If all checks pass, add to the list of processed contacts
+        # The 'current_phone_number' now holds the cleaned 10-digit number without +91
+        processed_contacts.append({'name': name, 'number': current_phone_number})
+        # print(f"Successfully processed contact: Name='{name}', Number='{current_phone_number}'")
+
+    return {"detail": processed_contacts}
+
 @router.post("/import_contacts", status_code=status.HTTP_201_CREATED)
-def import_contacts(contacts: str, user: user_dependency,db: Session = Depends(get_db)):
-    print(f"Importing contacts: {contacts}")   
-    return {"detail": contacts}
+def import_contacts(contacts: str,user: user_dependency, db: Session = Depends(get_db)):
+    contacts = process_contact(contacts)
+    return contacts
