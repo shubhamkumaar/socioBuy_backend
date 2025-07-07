@@ -4,6 +4,9 @@ from neo4j import Session
 from schemas.schema import UserBase, User
 from typing import Annotated
 from .login import verify_jwt_token
+from schemas.schema import UserBase
+from typing import List, Dict
+
 router = APIRouter()
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
@@ -105,45 +108,72 @@ def get_users(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+
+
+#get user contacts list from user contacts
+@router.get("/get_user_contacts", status_code=status.HTTP_200_OK)
+def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
+
+    query = """
+    MATCH (u:User)
+    SET u.contact = $newContacts 
+    RETURN u
+    """
+
+    parameters = {
+            "newContacts": user_contact
+        }
+    try:
+        result = db.run(query, parameters)
+        updated_user = result.single()
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        
+        return updated_user.data()['u']
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
+
 @router.post("/import_contacts", status_code=status.HTTP_201_CREATED)
 def import_contacts(contacts: str, user: user_dependency,db: Session = Depends(get_db)):
-    print(f"Importing contacts: {contacts}") 
-    # for contact in contacts:
-    #     check_query = """
-    #     MATCH (u:User)
-    #     WHERE u.name = $name OR u.phone = $phone
-    #     RETURN u
-    #     """
-    #     existing_user = db.run(check_query, name=contact.name, phone=contact.phone).single()
-
-    #     if existing_user:
-    #         continue
-    #     create_user_query = """
-    #     CREATE (u:User {
-    #         name: $name,
-    #         phone: $phone,
-    #         contact: $contact,
-    #         email: $email
-    #     })
-    #     RETURN u
-    #     """
-    #     params = {
-    #         "name": contact.name,
-    #         "phone": contact.phone,
-    #         "contact": contact.contact,
-    #         "email": contact.email
-    #     }
-    #     try:
-    #         result = db.run(create_user_query, params)
-    #         created_user_record = result.single()
-    #         if created_user_record is None:
-    #             raise HTTPException(
-    #                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #                 detail="Failed to create user."
-    #             )
-    #     except Exception as e:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             detail=f"An internal server error occurred while importing contacts: {e}"
-    #         )
+    print(f"Importing contacts: {contacts}")   
+    
     return {"detail": contacts}
+
+
+#get user contacts list from user contacts
+@router.get("/get_user_contacts", status_code=status.HTTP_200_OK)
+def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
+
+    query = """
+    MATCH (u:User)
+    SET u.contact = $newContacts 
+    RETURN u
+    """
+
+    parameters = {
+            "newContacts": user_contact
+        }
+    try:
+        result = db.run(query, parameters)
+        updated_user = result.single()
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        
+        return updated_user.data()['u']
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
+    

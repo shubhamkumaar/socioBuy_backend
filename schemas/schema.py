@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import List,Optional
+from datetime import datetime
 
 class User(BaseModel):
     id: str
@@ -51,3 +52,37 @@ class UserOut(BaseModel):
 
 class Config:
     from_attributes = True
+
+class ContactsUploadRequest(BaseModel):
+    contacts: List[int]
+
+
+class OrderItemRequest(BaseModel):
+    product_name: str
+    product_id: str
+    quantity: int = 1
+
+class OrderResponse(BaseModel):
+    order_id: str
+    user_id: str
+    products: List[OrderItemRequest]
+    total_price: float
+    timestamp: int
+
+class OrderCreate(BaseModel):
+    user_id: str
+    items: List[OrderItemRequest]
+
+class OrderCreateResponse(BaseModel):
+    success: bool
+    message: str
+    order_id: Optional[str] = None
+
+class OrderInDB(BaseModel):
+    order_id: str
+    user_id: str
+    username: str
+    order_date: datetime 
+    status: OrderCreateResponse
+    total_amount: float
+    items: List[OrderResponse]
