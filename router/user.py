@@ -6,9 +6,9 @@ from schemas.schema import UserBase, User
 from typing import Annotated, List
 from .login import verify_jwt_token
 from schemas.schema import UserBase
-import json
 import re
-router = APIRouter()
+
+router = APIRouter(tags=["User Management"], prefix="/users")
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
 

@@ -8,7 +8,6 @@ from neo4j import Session
 from schemas.schema import UserBase, UserOut, User
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
-token_blacklist = set()
 
 settings = Settings()
 router = APIRouter(tags=["Authentication"])
@@ -72,9 +71,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserOut
 def verify_jwt_token(token: Annotated[str,Depends(oauth2_bearer)],db: Session = Depends(get_db)):
 
     """This is used for in protected routes for getting the current user using the JSON Web Token which was sent under the try catch block,the payload is decoded using the jwt decode from then the user is queried fronm the database to seee if it exists and if it dosent an exception is raised and if their was error in Decoding JWT another HTTPexception is raised and if there were no errors the current user is returned"""
-    print(f"Token received: {token[:30]}...") # Print first few chars
-    print(f"JWT Secret Key (from settings): {settings.JWT_SECRET_KEY}")
-    print(f"JWT Algorithm (from settings): {settings.JWT_ALGORITHM}")
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

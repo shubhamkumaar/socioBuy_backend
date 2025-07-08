@@ -7,7 +7,7 @@ from models import OrderCreate, OrderInDB, OrderStatusUpdate
 
 from utils.order import create_order, update_order_status, get_order_details
 
-router = APIRouter()
+router = APIRouter(tags=["Order Management"],prefix="/orders")
 
 @router.post("/create_order", response_model=OrderInDB, status_code=status.HTTP_201_CREATED, summary="Place a new order")
 async def create_order_endpoint(order: OrderCreate, session: AsyncSession = Depends(get_db_session)):

@@ -6,7 +6,7 @@ from schemas.schema import User
 from typing import Annotated
 from .login import verify_jwt_token
 
-router = APIRouter()
+router = APIRouter(tags=["Product Management"], prefix="/products")
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
 
@@ -79,14 +79,20 @@ def get_products(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
-@router.get("/products/{product_id}", status_code=status.HTTP_200_OK)
+@router.get("/{product_id}", status_code=status.HTTP_200_OK)
 def get_product(product_id: str, user:user_dependency, db: Session = Depends(get_db)):
     query = """
     MATCH (p:Product {product_id: $product_id})
     RETURN p
     """
     
-    user_friend_query = f"""MATCH (u:User {{phone:"{user.phone}"}}) -[:FRIEND]-[:FRIEND] -> (f:User) RETURN f"""
+    user_friend_query = f"""
+    MATCH (u:User {{phone:"{user.phone}"}}) -[:FRIEND] -> (f:User) 
+    RETURN f AS person
+    UNION
+    MATCH (u:User {{phone:"{user.phone}"}}) -[:FRIEND] -> (f:User) -[:FRIEND] ->(fof:User) 
+    RETURN fof AS person
+    """
     
     try:
 
