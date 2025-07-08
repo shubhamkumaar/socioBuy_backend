@@ -3,3 +3,4 @@ uvicorn[standard]
 neo4j
 passlib[bcrypt]
 python-jose[cryptography]
+pydantic_settings
