@@ -2,10 +2,13 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session
 from schemas.schema import UserBase
-
+from schemas.schema import User
+from typing import Annotated
+from .login import verify_jwt_token
 
 router = APIRouter()
 
+user_dependency = Annotated[User, Depends(verify_jwt_token)]
 
 # create product
 @router.post("/products", status_code=status.HTTP_201_CREATED)
@@ -76,3 +79,29 @@ def get_products(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+@router.get("/products/{product_id}", status_code=status.HTTP_200_OK)
+def get_product(product_id: str, user:user_dependency, db: Session = Depends(get_db)):
+    query = """
+    MATCH (p:Product {product_id: $product_id})
+    RETURN p
+    """
+    
+    user_friend_query = f"""MATCH (u:User {{phone:"{user.phone}"}}) -[:FRIEND]-[:FRIEND] -> (f:User) RETURN f"""
+    
+    try:
+
+        result = db.run(query, product_id=product_id)
+        product_record = result.single()
+        
+        if not product_record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with ID '{product_id}' not found."
+            )
+        
+        return product_record.data()['p']  
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
