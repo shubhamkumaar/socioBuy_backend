@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, status
+from pydantic import BaseModel
 from database import get_db
 from neo4j import Session
 from schemas.schema import UserBase, User
-from typing import Annotated
+from typing import Annotated, List
 from .login import verify_jwt_token
 from schemas.schema import UserBase
 import json
@@ -10,6 +11,16 @@ import re
 router = APIRouter()
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
+
+class ContactIn(BaseModel):
+    name: str
+    number: str
+
+class ImportContactsRequest(BaseModel):
+    contacts: List[ContactIn] 
+
+class ImportContactsResponse(BaseModel):
+    message: str
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 def create_user(user: UserBase, db: Session = Depends(get_db)):
@@ -138,7 +149,7 @@ def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
-def process_contact(contacts: str): # Renamed parameter for clarity
+def process_contact(contacts: ImportContactsRequest): # Renamed parameter for clarity
     """
     Imports contacts from a JSON string, validates them, cleans phone numbers,
     and filters out malformed entries, helpline numbers, and invalid formats.
@@ -154,43 +165,14 @@ def process_contact(contacts: str): # Renamed parameter for clarity
     Raises:
         HTTPException: If the input string is not a valid JSON format.
     """
-    print(f"Received contacts string: {contacts}")
-
-    parsed_contacts_data = {}
-    try:
-        # This line is correct for parsing the incoming JSON string from a POST request body
-        parsed_contacts_data = json.loads(contacts)
-    except json.JSONDecodeError as e:
-        # Raise an HTTPException if the JSON is invalid
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid JSON format: {e}"
-        )
-
-    # Get the raw list of contact entries from the parsed dictionary
-    raw_contact_entries = parsed_contacts_data.get("contacts", [])
     
-    parsed_contacts_data = {}
-    try:
-        parsed_contacts_data = json.loads(contacts)
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid JSON format: {e}"
-        )
-
-    raw_contact_entries = parsed_contacts_data.get("contacts", [])
     INDIAN_MOBILE_FORMAT_PATTERN = re.compile(r"^[6-9]\d{9}$")
     processed_contacts = []
 
-    for entry in raw_contact_entries:
-        # 1. Ensure the entry is a dictionary
-        if not isinstance(entry, dict):
-            continue
-
+    for entry in contacts.contacts:
         # 2. Extract name and number, handling potential missing keys
-        name_raw = entry.get('name')
-        number_raw = entry.get('number')
+        name_raw = entry.name.strip()
+        number_raw = entry.number.strip()
 
         # 3. Validate and clean name: Must be a non-empty string after stripping whitespace
         if not isinstance(name_raw, str) or not name_raw.strip():
@@ -219,10 +201,15 @@ def process_contact(contacts: str): # Renamed parameter for clarity
         # The 'current_phone_number' now holds the cleaned 10-digit number without +91
         processed_contacts.append({'name': name, 'number': current_phone_number})
         # print(f"Successfully processed contact: Name='{name}', Number='{current_phone_number}'")
-
     return {"detail": processed_contacts}
 
 @router.post("/import_contacts", status_code=status.HTTP_201_CREATED)
-def import_contacts(contacts: str,user: user_dependency, db: Session = Depends(get_db)):
-    contacts = process_contact(contacts)
-    return contacts
+def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: Session = Depends(get_db)):
+    contacts = process_contact(contact)
+    create_contact_list = [
+        contact['number'] for contact in contacts['detail']
+    ]
+    print(create_contact_list)
+
+    # Add this in database
+    return {"message": "Contacts processed successfully"}
