@@ -119,6 +119,8 @@ def get_users(db: Session = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
+
+
 #get user contacts list from user contacts
 @router.get("/get_user_contacts", status_code=status.HTTP_200_OK)
 def get_user_contacts(user_contact: str, db: Session = Depends(get_db)):
@@ -213,3 +215,4 @@ def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: S
 
     # Add this in database
     return {"message": "Contacts processed successfully"}
+    
