@@ -7,7 +7,8 @@ from typing import Annotated, List,Optional
 from .login import verify_jwt_token
 from schemas.schema import UserBase, UserInDB, ContactsUploadRequest 
 import re
-from uuid import uuid4 
+from uuid import uuid4
+from utils.user import create_friend 
 
 router = APIRouter(prefix="/users",tags=["User Management"])
 
@@ -262,11 +263,13 @@ def process_contact(contacts: ImportContactsRequest): # Renamed parameter for cl
 @router.post("/import_contacts", status_code=status.HTTP_201_CREATED)
 def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: Session = Depends(get_db)):
     contacts = process_contact(contact)
+    
     create_contact_list = [
         contact['number'] for contact in contacts['detail']
     ]
-    # print(create_contact_list)
+    create_contact_list.remove(user.phone) if user.phone in create_contact_list else None
+    create_friend(create_contact_list,user.phone,db)
 
-    # Add this in database
+
     return {"message": "Contacts processed successfully"}
     
