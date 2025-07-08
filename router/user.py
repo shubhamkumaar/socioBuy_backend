@@ -265,7 +265,7 @@ def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: S
     create_contact_list = [
         contact['number'] for contact in contacts['detail']
     ]
-    print(create_contact_list)
+    # print(create_contact_list)
 
     # Add this in database
     return {"message": "Contacts processed successfully"}

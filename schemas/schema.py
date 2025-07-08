@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 
 class User(BaseModel):
-    user_id: str
+    id: str
     name: str
     phone: str
     email: EmailStr
@@ -52,7 +52,7 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     success: bool
     message: str
-    token: Optional[str] = None
+    access_token: Optional[str] = None
     name: str
     email: EmailStr
     phone: str
