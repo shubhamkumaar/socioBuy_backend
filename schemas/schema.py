@@ -88,3 +88,12 @@ class OrderInDB(BaseModel):
     status: OrderStatus
     total_amount: float
     items: List[OrderItemInDB]
+
+
+class OrderRequest(BaseModel):
+    product_id: str
+
+class OrderRelationDetail(BaseModel):
+    user_id: str
+    product_id: str
+    timestamp: str

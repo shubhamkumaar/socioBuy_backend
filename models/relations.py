@@ -11,3 +11,7 @@ def create_user_relation(user_id: str, target_user_id: str, db: Session = Depend
     result = db.run(query, user_id=user_id, target_user_id=target_user_id)
     if not result.single():
         raise HTTPException(status_code=404, detail="Relation creation failed")
+
+
+
+    
