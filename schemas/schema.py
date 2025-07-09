@@ -91,9 +91,13 @@ class OrderInDB(BaseModel):
 
 
 class OrderRequest(BaseModel):
-    product_id: str
+    product_id: List[str]
 
 class OrderRelationDetail(BaseModel):
     user_id: str
     product_id: str
     timestamp: str
+
+class OrderCreationResponse(BaseModel):
+    message: str
+    created_orders: List[OrderRelationDetail]

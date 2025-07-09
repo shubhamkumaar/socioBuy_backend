@@ -4,7 +4,7 @@ from typing import List
 from typing import Annotated
 from router.login import verify_jwt_token
 from schemas.schema import User
-from schemas.schema import OrderRequest, OrderRelationDetail, MessageResponse
+from schemas.schema import OrderRequest, OrderRelationDetail, OrderCreationResponse
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -93,45 +93,51 @@ def create_friend(contact:List[str],phone, db:Session):
             detail=f"An internal server error occurred while creating friendship: {e}"
         )
     
-def create_order_relation(order_data: OrderRequest,user:user_dependency, db: Session):
+def create_order_relation(order_data: OrderRequest, user: user_dependency, db: Session) -> OrderCreationResponse:
 
     timestamp = datetime.now().isoformat()
 
     query = """
     MERGE (u:User {user_id: $user_id})
-    MERGE (p:Product {product_id: $product_id})
+    UNWIND $product_ids AS single_product_id  // Iterate over each product ID in the list
+    MERGE (p:Product {product_id: single_product_id})
     CREATE (u)-[o:ORDERS {timestamp: $timestamp}]->(p)
-    RETURN u.user_id AS user_id, p.product_id AS product_id, o.timestamp AS timestamp
+    RETURN u.user_id AS user_id, single_product_id AS product_id, o.timestamp AS timestamp
     """
     
     params = {
         "user_id": user.user_id,
-        "product_id": order_data.product_id,
+        "product_ids": order_data.product_ids, 
         "timestamp": timestamp
     }
 
     try:
         result = db.run(query, params)
         
-        created_order_record = result.single()
-            
-        if created_order_record: 
-            return MessageResponse(
-                message="Order relationship created successfully",
-                detail=OrderRelationDetail(
-                    user_id=created_order_record["user_id"],
-                    product_id=created_order_record["product_id"],
-                    timestamp=created_order_record["timestamp"]
+        created_order_records = result.data()
+
+        if created_order_records:
+            created_orders_list = [
+                OrderRelationDetail(
+                    user_id=record["user_id"],
+                    product_id=record["product_id"],
+                    timestamp=record["timestamp"]
                 )
+                for record in created_order_records
+            ]
+            
+            return OrderCreationResponse( 
+                message=f"Successfully created {len(created_orders_list)} order relationship(s).",
+                created_orders=created_orders_list
             )
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create order relationship: No result returned from database operation."
+                detail="Failed to create order relationships: No results returned from database operation. Check if product_ids list was empty or an internal error occurred."
             )
     except Exception as e:
-        print(f"Error creating order relationship: {e}") 
+        print(f"Error creating order relationships: {e}") 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error while creating order relationship: {e}"
+            detail=f"Database error while creating order relationships: {e}"
         )
