@@ -156,7 +156,9 @@ def register(user: UserBase, db: Session = Depends(get_db)):
     })
     RETURN u
     """
+    
     params = user.model_dump()
+    params['phone'] = params['phone'].replace(" ", "")
     params["password"] = hashed_password
 
     try:
