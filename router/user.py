@@ -264,6 +264,25 @@ def process_contact(contacts: ImportContactsRequest): # Renamed parameter for cl
 def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: Session = Depends(get_db)):
     contacts = process_contact(contact)
     
+    save_contacts_query = """    MATCH (u:User {phone: $phone})
+    SET u.contact = $contacts
+    RETURN u.contact AS contact
+    """
+    try:
+        result = db.run(save_contacts_query, phone=user.phone, contacts=contacts['detail'])
+        updated_contacts = result.single()
+        if not updated_contacts:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update contacts in the database."
+            )
+    except Exception as e:
+        print(f"Error saving contacts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred while saving contacts: {e}"
+        )
+    
     create_contact_list = [
         contact['number'] for contact in contacts['detail']
     ]
