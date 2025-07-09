@@ -5,7 +5,8 @@ from schemas.schema import User
 from neo4j import Session
 from database import get_db
 from pydantic import BaseModel
-
+from gemini.gemini import generate_suggestions
+import json
 router = APIRouter(tags=["Cart"])
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
@@ -117,21 +118,28 @@ def suggest_products(cart:CartItem,user: user_dependency, db: Session = Depends(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-    print(friend_category)
+    # print(friend_category)
 
     cart = []
     for product in products:
         c = {}
         productName = product.get('productName')
         c['productName'] = productName
+        c['productBrand'] = product.get('productBrand')
+        c['productCategory'] = product.get('productCategory')
         c['direct_product'] = friend_product.get(productName, [])
         c['same_brand'] = friend_brand.get(product['productBrand'], [])
         c['same_category'] = friend_category.get(product['productCategory'], [])
         cart.append(c)
+
+    # print(type(cart))    
+    cart_string = json.dumps(cart)
+    message = generate_suggestions(cart_string)
     return {
         # "friend_product": friend_product,
         # "friend_category": friend_category
         # "friend_brand": friend_brand,
         # "products": products
         "cart": cart,
+        "message": message
     }
