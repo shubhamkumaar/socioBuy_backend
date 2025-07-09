@@ -28,7 +28,7 @@ class UserInDB(BaseModel):
     name: str
     phone: str
     email: EmailStr
-    contact: List[int] = [] 
+    contact: List[str] = [] 
 
 class Product(BaseModel):
     product_id: str
