@@ -242,7 +242,6 @@ def process_contact(contacts: ImportContactsRequest): # Renamed parameter for cl
 
         # Start with the raw number, stripped of leading/trailing whitespace
         current_phone_number = number_raw.strip()
-
         # 5. Remove '+91' prefix if present from the number *before* normalization for validation
         if current_phone_number.startswith('+91'):
             current_phone_number = current_phone_number[3:].strip() # Remove '+91' and strip any extra whitespace
@@ -254,6 +253,7 @@ def process_contact(contacts: ImportContactsRequest): # Renamed parameter for cl
         if not INDIAN_MOBILE_FORMAT_PATTERN.match(normalized_phone_number):
             continue
 
+        current_phone_number = current_phone_number.replace(" ", "") 
         # If all checks pass, add to the list of processed contacts
         # The 'current_phone_number' now holds the cleaned 10-digit number without +91
         processed_contacts.append({'name': name, 'number': current_phone_number})
@@ -264,24 +264,24 @@ def process_contact(contacts: ImportContactsRequest): # Renamed parameter for cl
 def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: Session = Depends(get_db)):
     contacts = process_contact(contact)
     
-    save_contacts_query = """    MATCH (u:User {phone: $phone})
-    SET u.contact = $contacts
-    RETURN u.contact AS contact
-    """
-    try:
-        result = db.run(save_contacts_query, phone=user.phone, contacts=contacts['detail'])
-        updated_contacts = result.single()
-        if not updated_contacts:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update contacts in the database."
-            )
-    except Exception as e:
-        print(f"Error saving contacts: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An internal server error occurred while saving contacts: {e}"
-        )
+    # save_contacts_query = """    MATCH (u:User {phone: $phone})
+    # SET u.contact = $contacts
+    # RETURN u.contact AS contact
+    # """
+    # try:
+    #     result = db.run(save_contacts_query, phone=user.phone, contacts=contacts['detail'])
+    #     updated_contacts = result.single()
+    #     if not updated_contacts:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #             detail="Failed to update contacts in the database."
+    #         )
+    # except Exception as e:
+    #     print(f"Error saving contacts: {e}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"An internal server error occurred while saving contacts: {e}"
+    #     )
     
     create_contact_list = [
         contact['number'] for contact in contacts['detail']
