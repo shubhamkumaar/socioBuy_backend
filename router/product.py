@@ -1,51 +1,51 @@
+
 from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from neo4j import Session,AsyncSession
-from schemas.schema import UserBase
 from schemas.schema import User,Product
 from typing import Annotated,List, Optional
 from .login import verify_jwt_token
-from uuid import uuid4 
+from uuid import uuid4
+
 router = APIRouter(tags=["Product Management"], prefix="/products")
 
 user_dependency = Annotated[User, Depends(verify_jwt_token)]
 
-# create product
 
 @router.post("/", response_model=Product, status_code=status.HTTP_201_CREATED, summary="Create a new product")
-async def create_product_endpoint(product: Product, db: AsyncSession = Depends(get_db)):
+async def create_product_endpoint(product_input: Product, db: AsyncSession = Depends(get_db)):
     check_query = """
     MATCH (p:Product)
     WHERE p.name = $name
     RETURN p
     """
-    check_result = await db.run(check_query, name=product.name)
+    check_result = await db.run(check_query, name=product_input.name)
     existing_product = await check_result.single()
 
     if existing_product:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"A product with the name '{product.name}' already exists."
+            detail=f"A product with the name '{product_input.name}' already exists."
         )
 
-    product_id = str(uuid4()) 
+    generated_product_id = str(uuid4()) # Your code generates this UUID
 
     create_product_query = """
     CREATE (p:Product {
-        product_id: $product_id,
+        productId: $generated_product_id,
         name: $name,
         description: $description,
         price: $price,
         category_id: $category_id
     })
-    RETURN p.product_id AS product_id, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
+    RETURN p.productId AS productId, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
     """
     params = {
-        "product_id": product_id, 
-        "name": product.name,
-        "price": product.price,
-        "description": product.description,
-        "category_id": product.category_id
+        "generated_product_id": generated_product_id,
+        "name": product_input.name,
+        "price": product_input.price,
+        "description": product_input.description,
+        "category_id": product_input.category_id
     }
 
     try:
@@ -54,7 +54,7 @@ async def create_product_endpoint(product: Product, db: AsyncSession = Depends(g
 
         if created_product_record:
             return Product(
-                product_id=created_product_record["product_id"],
+                productId=created_product_record["productId"],
                 name=created_product_record["name"],
                 description=created_product_record["description"],
                 price=created_product_record["price"],
@@ -73,10 +73,10 @@ async def create_product_endpoint(product: Product, db: AsyncSession = Depends(g
 
 
 @router.get("/", response_model=List[Product], status_code=status.HTTP_200_OK, summary="Get all products")
-async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)): 
+async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)):
     query = """
     MATCH (p:Product)
-    RETURN p.product_id AS product_id, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
+    RETURN p.productId AS productId, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
     """
 
     try:
@@ -84,7 +84,7 @@ async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)):
         products = []
         async for record in result:
             products.append(Product(
-                product_id=record["product_id"],
+                productId=record["productId"],
                 name=record["name"],
                 description=record["description"],
                 price=record["price"],
@@ -104,11 +104,12 @@ async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)):
             detail=f"An internal server error occurred: {e}"
         )
 
-@router.get("/{product_id}", status_code=status.HTTP_200_OK)
+@router.get("/{product_id}", status_code=status.HTTP_200_OK, response_model=Product)
 def get_product(product_id: str, user:user_dependency, db: Session = Depends(get_db)):
+
     query = """
-    MATCH (p:Product {product_id: $product_id})
-    RETURN p
+    MATCH (p:Product {productId: $product_id})
+    RETURN p.productId AS productId, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
     """
     
     user_friend_query = f"""
@@ -130,11 +131,15 @@ def get_product(product_id: str, user:user_dependency, db: Session = Depends(get
                 detail=f"Product with ID '{product_id}' not found."
             )
         
-        return product_record.data()['p']  
+        return Product(
+            productId=product_record["productId"],
+            name=product_record["name"],
+            description=product_record["description"],
+            price=product_record["price"],
+            category_id=product_record["category_id"]
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An internal server error occurred: {e}"
         )
-    
-    

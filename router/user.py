@@ -294,7 +294,7 @@ def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: S
     return {"message": "Contacts processed successfully"}
     
 @router.post("/create_order", response_model=OrderCreationResponse, status_code=status.HTTP_201_CREATED, summary="Create a new order")
-def create_order_endpoint(order_data: List[str], user: user_dependency, db: Session = Depends(get_db)) -> OrderCreationResponse: # Changed return type to OrderCreationResponse
+def create_order_endpoint(order_data: List[int], user: user_dependency, db: Session = Depends(get_db)) -> OrderCreationResponse: 
     if not order_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
