@@ -93,50 +93,80 @@ def create_friend(contact:List[str],phone, db:Session):
             detail=f"An internal server error occurred while creating friendship: {e}"
         )
     
-def create_order_relation(order_data: List[str], user: user_dependency, db: Session) -> OrderCreationResponse:
+def create_order_relation(product_ids_list: List[int], user: user_dependency, db: Session) -> OrderCreationResponse:
 
     timestamp = datetime.now().isoformat()
 
     query = """
-    MERGE (u:User {user_id: $user_id})
-    UNWIND $product_ids AS single_product_id  // Iterate over each product ID in the list
-    MERGE (p:Product {product_id: single_product_id})
-    CREATE (u)-[o:ORDERS {timestamp: $timestamp}]->(p)
-    RETURN u.user_id AS user_id, single_product_id AS product_id, o.timestamp AS timestamp
-    """
+    MATCH (u:User {email: $email})
+    WITH u, $productIds AS productIdsList
+    UNWIND productIdsList AS single_product_id
+    OPTIONAL MATCH (p:Product {productId: single_product_id})
     
+    FOREACH (
+        n IN CASE WHEN p IS NOT NULL THEN [1] ELSE [] END |
+        CREATE (u)-[:ORDERS {timestamp: $timestamp}]->(p)
+    )
+    
+    RETURN single_product_id AS requested_product_id,
+           u.email AS email,
+           $timestamp AS order_timestamp,
+           CASE WHEN p IS NOT NULL THEN true ELSE false END AS product_found
+    """
+
     params = {
-        "user_id": user.email,
-        "product_ids": order_data, 
+        "email": user.email,
+        "productIds": product_ids_list,
         "timestamp": timestamp
     }
 
     try:
-        result = db.run(query, params)
-        
-        created_order_records = result.data()
+        results = db.run(query, params).data()
 
-        if created_order_records:
-            created_orders_list = [
-                OrderRelationDetail(
-                    user_id=record["user_id"],
-                    product_id=record["product_id"],
-                    timestamp=record["timestamp"]
+        created_orders_list: List[OrderRelationDetail] = []
+        failed_to_order_products: List[str] = []
+
+        for record in results:
+            if record["product_found"]:
+                created_orders_list.append(
+                    OrderRelationDetail(
+                        email=record["email"],
+                        productId=record["requested_product_id"],
+                        timestamp=record["order_timestamp"]
+                    )
                 )
-                for record in created_order_records
-            ]
-            
-            return OrderCreationResponse( 
-                message=f"Successfully created {len(created_orders_list)} order relationship(s).",
-                created_orders=created_orders_list
+            else:
+                failed_to_order_products.append(record["requested_product_id"])
+
+        message = "Order processing complete."
+        if created_orders_list:
+            message += f" Successfully created {len(created_orders_list)} order relationship(s)."
+        if failed_to_order_products:
+            message += f" Failed to order products with IDs: {', '.join(failed_to_order_products)} (product not found)."
+        
+        if not results and product_ids_list:
+             raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with email {user.email} not found. Cannot create orders."
             )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create order relationships: No results returned from database operation. Check if product_ids list was empty or an internal error occurred."
+        elif not results and not product_ids_list:
+            return OrderCreationResponse(
+                message="No products provided for ordering.",
+                created_orders=[],
+                failed_products=[]
             )
+
+
+        return OrderCreationResponse(
+            message=message,
+            created_orders=created_orders_list,
+            failed_products=failed_to_order_products
+        )
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        print(f"Error creating order relationships: {e}") 
+        print(f"Error creating order relationships: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database error while creating order relationships: {e}"

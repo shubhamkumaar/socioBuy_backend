@@ -31,7 +31,7 @@ class UserInDB(BaseModel):
     contact: List[str] = [] 
 
 class Product(BaseModel):
-    product_id: str
+    productId: str
     name: str
     description: str
     price: float
@@ -40,10 +40,10 @@ class Product(BaseModel):
 class Category(BaseModel):
     category_id: str
     name: str
-    products_id: List[int]
+    productId: List[int]
 
 class AddProducts(BaseModel):
-    product_ids: List[str]
+    productIds: List[int]
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -64,11 +64,11 @@ class ContactsUploadRequest(BaseModel):
     contacts: List[int]
 
 class OrderItemCreateRequest(BaseModel):
-    product_id: str
+    productId: str
     quantity: int = 1
 
 class OrderItemInDB(BaseModel):
-    product_id: str
+    productId: str
     product_name: str
     product_price_at_order: float
     quantity: int
@@ -91,11 +91,11 @@ class OrderInDB(BaseModel):
 
 
 class OrderRequest(BaseModel):
-    product_id: List[str]
+    productId: List[str]
 
 class OrderRelationDetail(BaseModel):
-    user_id: str
-    product_id: str
+    email: EmailStr
+    productId: int
     timestamp: str
 
 class OrderCreationResponse(BaseModel):
