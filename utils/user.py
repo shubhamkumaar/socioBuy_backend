@@ -93,7 +93,7 @@ def create_friend(contact:List[str],phone, db:Session):
             detail=f"An internal server error occurred while creating friendship: {e}"
         )
     
-def create_order_relation(order_data: OrderRequest, user: user_dependency, db: Session) -> OrderCreationResponse:
+def create_order_relation(order_data: List[str], user: user_dependency, db: Session) -> OrderCreationResponse:
 
     timestamp = datetime.now().isoformat()
 
@@ -106,8 +106,8 @@ def create_order_relation(order_data: OrderRequest, user: user_dependency, db: S
     """
     
     params = {
-        "user_id": user.user_id,
-        "product_ids": order_data.product_ids, 
+        "user_id": user.email,
+        "product_ids": order_data, 
         "timestamp": timestamp
     }
 
