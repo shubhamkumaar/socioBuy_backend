@@ -1,11 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from neo4j import AsyncSession
 from typing import List
+from typing import Annotated
+from router.login import verify_jwt_token
+from schemas.schema import User
 
 from database import get_db
 from schemas.schema import OrderCreate, OrderInDB, OrderStatusUpdate, OrderStatus # Changed import
 
 from utils.order import create_order, update_order_status, get_order_details
+
+user_dependency = Annotated[User, Depends(verify_jwt_token)]
+
 
 router = APIRouter(tags=["Order Management"],prefix="/orders")
 
@@ -45,3 +51,4 @@ async def get_order_details_endpoint(order_id: str, session: AsyncSession = Depe
     except Exception as e:
         print(f"Error retrieving order details: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while retrieving the order details.")
+    

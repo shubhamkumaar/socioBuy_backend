@@ -5,10 +5,11 @@ from neo4j import AsyncSession ,Session
 from schemas.schema import UserBase, User
 from typing import Annotated, List,Optional
 from .login import verify_jwt_token
-from schemas.schema import UserBase, UserInDB, ContactsUploadRequest 
+from schemas.schema import UserBase, UserInDB, ContactsUploadRequest
+from schemas.schema import OrderCreationResponse
 import re
 from uuid import uuid4
-from utils.user import create_friend 
+from utils.user import create_friend,create_order_relation
 
 router = APIRouter(prefix="/users",tags=["User Management"])
 
@@ -206,7 +207,7 @@ async def get_user_contacts_endpoint(user_id: str, db: AsyncSession = Depends(ge
             detail=f"An internal server error occurred: {e}"
         )
 
-def process_contact(contacts: ImportContactsRequest): # Renamed parameter for clarity
+def process_contact(contacts: ImportContactsRequest): 
     """
     Imports contacts from a JSON string, validates them, cleans phone numbers,
     and filters out malformed entries, helpline numbers, and invalid formats.
@@ -292,3 +293,12 @@ def import_contacts(contact: ImportContactsRequest, user: user_dependency, db: S
 
     return {"message": "Contacts processed successfully"}
     
+@router.post("/create_order", response_model=OrderCreationResponse, status_code=status.HTTP_201_CREATED, summary="Create a new order")
+def create_order_endpoint(order_data: List[str], user: user_dependency, db: Session = Depends(get_db)) -> OrderCreationResponse: # Changed return type to OrderCreationResponse
+    if not order_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order data cannot be empty."
+        )
+
+    return create_order_relation(order_data, user, db)

@@ -118,12 +118,12 @@ def get_product(product_id: str, user:user_dependency, db: Session = Depends(get
     MATCH (u:User {{phone:"{user.phone}"}}) -[:FRIEND] -> (f:User) -[:FRIEND] ->(fof:User) 
     RETURN fof AS person
     """
-    
+
     try:
 
         result = db.run(query, product_id=product_id)
         product_record = result.single()
-        
+
         if not product_record:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -136,3 +136,5 @@ def get_product(product_id: str, user:user_dependency, db: Session = Depends(get
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An internal server error occurred: {e}"
         )
+    
+    
