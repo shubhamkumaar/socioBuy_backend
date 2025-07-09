@@ -53,7 +53,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserOut
     except JWTError:
         raise credentials_exception
 
-    query = "MATCH (u:User {email: $email}) RETURN u, id(u) AS internal_node_id"
+    query = "MATCH (u:User {email: $email}) RETURN u, elementId(u) AS node_id"
 
     user_record = db.run(query, email=email).single()
 
@@ -87,7 +87,7 @@ def verify_jwt_token(token: Annotated[str,Depends(oauth2_bearer)],db: Session = 
 
     # Assuming you are using a graph database like Neo4j with a similar driver
     # as in your first example. If using SQLAlchemy, the query would be different.
-    query = "MATCH (u:User {email: $email}) RETURN u, id(u) AS node_id"
+    query = "MATCH (u:User {email: $email}) RETURN u, elementId(u) AS node_id"
 
     user_record = db.run(query, email=email).single()
     
@@ -97,7 +97,6 @@ def verify_jwt_token(token: Annotated[str,Depends(oauth2_bearer)],db: Session = 
     user_data = user_record['u']
     if user_data is None:
         raise credentials_exception
-    print(f"User data retrieved: {user_data}")
     return User(
         id=str(user_data['node_id']),
         name=user_data['name'],
