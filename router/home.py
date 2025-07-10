@@ -47,14 +47,12 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
     CALL {
         // Friends
         MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
-        WITH f AS p
-    
-        // Friends of friends
+        RETURN f as person
+        UNION
         MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
-        WITH COLLECT(p) + COLLECT(fof) AS all_persons_in_subquery
-        RETURN COALESCE(all_persons_in_subquery, []) AS person_list
+        RETURN fof as person
     }
-    WITH person_list
+    WITH COLLECT(person) AS person_list
     WHERE size(person_list) > 0
     
     UNWIND person_list AS person
@@ -73,14 +71,14 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
 
     query_cover = """
     CALL {
+        // Friends
         MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
-        WITH f AS p
-    
+        RETURN f as person
+        UNION
         MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
-        WITH COLLECT(p) + COLLECT(fof) AS all_persons_in_subquery
-        RETURN COALESCE(all_persons_in_subquery, []) AS person_list
+        RETURN fof as person
     }
-    WITH person_list
+    WITH COLLECT(person) AS person_list
     WHERE size(person_list) > 0
     
     UNWIND person_list AS person
@@ -90,7 +88,7 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
     LIMIT 5
     RETURN product
     """
-    
+
     categories = {}
     cover_products_list = []
     try:
@@ -137,4 +135,5 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+    
     
