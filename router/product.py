@@ -106,15 +106,13 @@ async def get_all_products_endpoint(db: AsyncSession = Depends(get_db)):
 
 @router.get("/{product_id}", status_code=status.HTTP_200_OK)
 def get_product(product_id: int, user:user_dependency, db: Session = Depends(get_db)):
-
-    query = """
-    MATCH (p:Product {productId: $productId}) return p
     """
- 
+    Get a product by its ID.
+    Returns the product details if found.
+    """
     mutual_friends_who_ordered_query = """
     MATCH (target:Product {productId: $productId})
-    WITH target.productBrand AS targetBrand, target.productId AS targetId
-    
+    WITH target.productBrand AS targetBrand, target.productId AS targetId, target
     // Step 2: Collect friends and friends-of-friends
     CALL () {
         MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
@@ -123,7 +121,7 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
         MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
         RETURN fof AS person, 'fof' AS relation
     }
-    WITH targetBrand, targetId, person, relation
+    WITH targetBrand, targetId, person, relation, target
     WHERE person.phone <> $phone
     
     // Step 3: Match product orders by those people
@@ -132,6 +130,7 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     
     // Step 4: Build per match_type
     WITH
+      target,
       CASE WHEN p.productId = targetId THEN 'same_product' ELSE 'same_brand' END AS match_type,
       {
         name: person.name,
@@ -144,37 +143,20 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     
     // Step 5: Separate collections for each type
     WITH
+      target,
       collect(CASE WHEN match_type = 'same_product' THEN personData ELSE NULL END) AS same_product_list,
       collect(CASE WHEN match_type = 'same_brand' THEN personData ELSE NULL END) AS same_brand_list
     
     // Step 6: Filter NULLs and return as a single map
     RETURN {
       same_product: [p IN same_product_list WHERE p IS NOT NULL],
-      same_brand: [p IN same_brand_list WHERE p IS NOT NULL]
+      same_brand: [p IN same_brand_list WHERE p IS NOT NULL],
+      product:target
     } AS result
     """
     try:
-
-        result = db.run(query, productId=product_id)
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Product with ID '{product_id}' not found."
-            )
-
         friends = db.run(mutual_friends_who_ordered_query, phone=user.phone, productId=product_id).data()
-        product_record = result.single()
-
-        if not product_record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Product with ID '{product_id}' not found."
-            )
-    
-        return {
-            "product": product_record["p"],
-            "friends": friends[0]['result']
-        }
+        return friends[0]['result']
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
