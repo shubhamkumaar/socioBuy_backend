@@ -39,6 +39,41 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
     ORDER BY category, product.name
     """
 
+
+    query_home = """
+    // Part 1: Dynamically get product categories ordered by friends/friends-of-friends
+    CALL {
+        MATCH (u:User {phone:"7763042401"}) - [:FRIEND] ->(f:User)
+        RETURN f AS person
+        UNION
+        MATCH (u:User {phone:"7763042401"}) - [:FRIEND] ->(f:User)-[:FRIEND] ->(fof:User)
+        RETURN fof AS person
+    }
+    MATCH (person) -[:ORDERS] ->(orderedProduct:Product)
+    WITH DISTINCT orderedProduct.productCategory AS dynamicProductCategory
+    ORDER BY dynamicProductCategory DESC
+    LIMIT 5
+    WITH COLLECT(dynamicProductCategory) AS productCategoriesForSearch // Collect these categories into a list
+    
+    UNWIND productCategoriesForSearch AS productCategory // Unwind the categories obtained from the first part
+    MATCH (pr:Product{productCategory: productCategory})
+    WITH productCategory, COLLECT(pr) AS products_in_category
+    RETURN productCategory, products_in_category[0..15] AS limitedProducts"""
+
+    query_cover = """
+    CALL {
+    MATCH (u:User {phone:"7763042401"}) - [:FRIEND] ->(f:User) return f as person
+    UNION
+    MATCH (u:User {phone:"7763042401"}) - [:FRIEND] ->(f:User)-[:FRIEND] ->(fof:User) return fof as person
+    }
+    
+    MATCH (person) -[:ORDERS] ->(pr:Product)
+    WITH DISTINCT pr.productId AS productId, pr AS product
+    ORDER BY productId DESC
+    LIMIT 5
+    return product
+    """
+
     try:
         res = db.run(query).data()
         grouped_by_category = {}

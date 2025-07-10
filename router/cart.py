@@ -52,13 +52,14 @@ def suggest_products(cart:CartItem,user: user_dependency, db: Session = Depends(
     friend_product = {}
     try:
         friends = db.run(get_friend_who_ordered_query, phone=user.phone, product_id=product_ids).data()
-        for product in friends:
-            product['product_name'] = product.get('product_name')
-            product['friend_name'] = product.get('friend_name')
-            product['order_timestamp'] = product.get('order_timestamp')
-            if friend_product.get(product['product_name']) is None:
-                friend_product[product['product_name']] = []
-            friend_product[product['product_name']].append({"friend_name": product['friend_name'], "order_timestamp": product['order_timestamp']})
+        if friends is not None:
+            for product in friends:
+                product['product_name'] = product.get('product_name')
+                product['friend_name'] = product.get('friend_name')
+                product['order_timestamp'] = product.get('order_timestamp')
+                if friend_product.get(product['product_name']) is None:
+                    friend_product[product['product_name']] = []
+                friend_product[product['product_name']].append({"friend_name": product['friend_name'], "order_timestamp": product['order_timestamp']})
 
         # friend_product = [{"friend_name": friend['friend_name'], "product_name": friend['product_name']} for friend in friends]
     except Exception as e:
@@ -81,11 +82,12 @@ def suggest_products(cart:CartItem,user: user_dependency, db: Session = Depends(
     friend_brand = {}
     try:
         friends = db.run(friend_who_use_same_brand_query, phone=user.phone, brands=brands).data()
-        for f in friends:
-            if friend_brand.get(f['product_brand']) is None:
-                friend_brand[f['product_brand']] = []
-            friend_brand[f['product_brand']].append({"product_name": f['product_name'], "friend_name": f['friend_name'], "order_timestamp": f['order_timestamp']})
-        # friend_brand = [{"friend_name": friend['friend_name'], "product_brand": friend['product_brand']} for friend in friends]
+        if friends is not None:
+            for f in friends:
+                if friend_brand.get(f['product_brand']) is None:
+                    friend_brand[f['product_brand']] = []
+                friend_brand[f['product_brand']].append({"product_name": f['product_name'], "friend_name": f['friend_name'], "order_timestamp": f['order_timestamp']})
+            # friend_brand = [{"friend_name": friend['friend_name'], "product_brand": friend['product_brand']} for friend in friends]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -108,10 +110,11 @@ def suggest_products(cart:CartItem,user: user_dependency, db: Session = Depends(
     friend_category = {}
     try:
         friends = db.run(query_friend_category, phone=user.phone, categories=categories).data()
-        for friend in friends:
-            if friend_category.get(friend['product_category']) is None:
-                friend_category[friend['product_category']] = []
-            friend_category[friend['product_category']].append({"product_name": friend['product_name'], "friend_name": friend['friend_name'], "order_timestamp": friend['order_timestamp']})
+        if friends is not None:
+            for friend in friends:
+                if friend_category.get(friend['product_category']) is None:
+                    friend_category[friend['product_category']] = []
+                friend_category[friend['product_category']].append({"product_name": friend['product_name'], "friend_name": friend['friend_name'], "order_timestamp": friend['order_timestamp']})
         # friend_category = [{"friend_name": friend['friend_name'], "product_category": friend['product_category']} for friend in friends]
     except Exception as e:
         raise HTTPException(
@@ -128,18 +131,18 @@ def suggest_products(cart:CartItem,user: user_dependency, db: Session = Depends(
         c['productBrand'] = product.get('productBrand')
         c['productCategory'] = product.get('productCategory')
         c['direct_product'] = friend_product.get(productName, [])
-        c['same_brand'] = friend_brand.get(product['productBrand'], [])
-        c['same_category'] = friend_category.get(product['productCategory'], [])
+        same_brand_products = friend_brand.get(product['productBrand'], [])
+        c['same_brand'] = [
+            p for p in same_brand_products if p.get("product_name") != productName
+        ]
+        same_category_products = friend_category.get(product['productCategory'], [])
+        c['same_category'] = [
+            p for p in same_category_products if p.get("product_name") != productName
+        ]
         cart.append(c)
-
-    # print(type(cart))    
+  
     cart_string = json.dumps(cart)
     message = generate_suggestions(cart_string)
     return {
-        # "friend_product": friend_product,
-        # "friend_category": friend_category
-        # "friend_brand": friend_brand,
-        # "products": products
-        "cart": cart,
         "message": message
     }
