@@ -86,3 +86,4 @@ Dockerfile.orig
 # Temporary files
 tmp/
 *.tmp
+auto-docs-output/
