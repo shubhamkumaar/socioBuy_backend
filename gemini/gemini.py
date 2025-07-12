@@ -56,6 +56,12 @@ json
   ]
 }
 
+## Product Name Creation Guidelines
+- Use the logical product name from the cart data
+- Remove any unnecessary details
+- Keep it concise and relevant to the product
+- Example: "Samsung Galaxy S24" instead of "Samsung Galaxy S24 - 128GB - Black"
+- Example: "Cookware" instead of "Cookware Set - 16 Piece Non-Stick Pots and Pans"
 
 ## Message Creation Guidelines
 
@@ -90,6 +96,10 @@ json
 - "Someone in Mike's circle bought this recently - the social proof is strong"
 - "A mutual friend through Jessica purchased this - your network has great taste"
 - "3 people in your extended circle have bought similar items - you're onto something good"
+
+#### If No Data for same_product, brand, or category:
+- "Looks like you're ahead of the curve - no one in your circle has bought this yet!"
+- "This one's a unique find - your friends haven't explored this product yet, but it could be a game-changer!"
 
 ### 3. TONE AND STYLE RULES
 
