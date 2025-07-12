@@ -110,6 +110,16 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     Get a product by its ID.
     Returns the product details if found.
     """
+
+    product_query = """
+    MATCH (target:Product {productId: $productId})
+    RETURN {
+      same_product: [Null],
+      same_brand: [NULL],
+      product:target
+    } AS result
+    """
+
     mutual_friends_who_ordered_query = """
     MATCH (target:Product {productId: $productId})
     WITH target.productBrand AS targetBrand, target.productId AS targetId, target
@@ -156,6 +166,9 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     """
     try:
         friends = db.run(mutual_friends_who_ordered_query, phone=user.phone, productId=product_id).data()
+        if not friends:
+                    friends = db.run(product_query, phone=user.phone, productId=product_id).data()
+
         return friends[0]['result']
     except Exception as e:
         raise HTTPException(
