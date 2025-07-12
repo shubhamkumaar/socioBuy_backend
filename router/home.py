@@ -45,48 +45,50 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
 
     query_home = """
     CALL {
-        // Friends
-        MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
-        RETURN f as person
-        UNION
-        MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
-        RETURN fof as person
-    }
-    WITH COLLECT(person) AS person_list
-    WHERE size(person_list) > 0
-    
-    UNWIND person_list AS person
-    MATCH (person)-[:ORDERS]->(orderedProduct:Product)
-    WITH DISTINCT orderedProduct.productCategory AS dynamicProductCategory
-    ORDER BY dynamicProductCategory DESC
-    LIMIT 5
-    WITH COLLECT(dynamicProductCategory) AS productCategoriesForSearch
-    WHERE size(productCategoriesForSearch) > 0
-    
-    UNWIND productCategoriesForSearch AS productCategory
-    MATCH (pr:Product {productCategory: productCategory})
-    WITH productCategory, COLLECT(pr) AS products_in_category
-    RETURN productCategory, products_in_category[0..15] AS limitedProducts
+    // Friends
+    MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
+    RETURN f as person
+    UNION
+    MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
+    RETURN fof as person
+}
+WITH COLLECT(person) AS person_list
+WHERE size(person_list) > 0
+
+UNWIND person_list AS person
+MATCH (person)-[:ORDERS]->(orderedProduct:Product)
+// Count occurrences of each product category from ordered products
+WITH orderedProduct.productCategory AS dynamicProductCategory, count(orderedProduct) AS categoryOrderCount
+ORDER BY categoryOrderCount DESC // Order by the count of orders for each category
+LIMIT 5 // Get the top 5 most ordered categories
+WITH COLLECT(dynamicProductCategory) AS productCategoriesForSearch
+WHERE size(productCategoriesForSearch) > 0
+
+UNWIND productCategoriesForSearch AS productCategory
+MATCH (pr:Product {productCategory: productCategory})
+WITH productCategory, COLLECT(pr) AS products_in_category
+RETURN productCategory, products_in_category[0..15] AS limitedProducts
     """
 
     query_cover = """
     CALL {
-        // Friends
-        MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
-        RETURN f as person
-        UNION
-        MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
-        RETURN fof as person
-    }
-    WITH COLLECT(person) AS person_list
-    WHERE size(person_list) > 0
-    
-    UNWIND person_list AS person
-    MATCH (person)-[:ORDERS]->(pr:Product)
-    WITH DISTINCT pr.productId AS productId, pr AS product
-    ORDER BY productId DESC
-    LIMIT 5
-    RETURN product
+    // Friends
+    MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
+    RETURN f as person
+    UNION
+    MATCH (u:User {phone: $phone})-[:FRIEND]->(:User)-[:FRIEND]->(fof:User)
+    RETURN fof as person
+}
+WITH COLLECT(person) AS person_list
+WHERE size(person_list) > 0
+
+UNWIND person_list AS person
+MATCH (person)-[r:ORDERS]->(pr:Product)
+// Group by product and count the number of orders
+WITH pr AS product, count(r) AS orderCount
+ORDER BY orderCount DESC
+LIMIT 5 
+RETURN product
     """
 
     categories = {}
