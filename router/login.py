@@ -15,7 +15,7 @@ router = APIRouter(tags=["Authentication"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ACCESS_TOKEN_COOKIE_NAME = "access_token"
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
