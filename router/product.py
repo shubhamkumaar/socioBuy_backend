@@ -114,8 +114,8 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     product_query = """
     MATCH (target:Product {productId: $productId})
     RETURN {
-      same_product: [Null],
-      same_brand: [NULL],
+      same_product: [],
+      same_brand: [],
       product:target
     } AS result
     """
