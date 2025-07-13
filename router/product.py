@@ -123,7 +123,6 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     mutual_friends_who_ordered_query = """
     MATCH (target:Product {productId: $productId})
     WITH target.productBrand AS targetBrand, target.productId AS targetId, target
-    // Step 2: Collect friends and friends-of-friends
     CALL () {
         MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
         RETURN f AS person, 'direct' AS relation
@@ -134,11 +133,9 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
     WITH targetBrand, targetId, person, relation, target
     WHERE person.phone <> $phone
     
-    // Step 3: Match product orders by those people
     MATCH (person)-[ts:ORDERS]->(p:Product)
     WHERE p.productId = targetId OR p.productBrand = targetBrand
     
-    // Step 4: Build per match_type
     WITH
       target,
       CASE WHEN p.productId = targetId THEN 'same_product' ELSE 'same_brand' END AS match_type,
