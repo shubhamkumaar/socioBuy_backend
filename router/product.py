@@ -172,3 +172,50 @@ def get_product(product_id: int, user:user_dependency, db: Session = Depends(get
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An internal server error occurred: {e}"
         )
+    
+
+@router.get("/similar/{product_id}", response_model=List[Product], status_code=status.HTTP_200_OK, summary="Get similar products by category")
+async def get_similar_products(product_id: str, db: AsyncSession = Depends(get_db)):
+
+    get_category = """
+    MATCH (p:Product {productId: $productId})
+    RETURN p.category_id AS category_id
+    """
+    try:
+        Cresult = await db.run(get_category, productId=product_id)
+        category_record = await Cresult.single()
+
+        if not category_record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with ID '{product_id}' not found."
+            )
+        
+        category_id = category_record["category_id"]
+
+        get_similar_products = """
+        MATCH (p:Product)
+        WHERE p.category_id = $categoryId AND p.productId <> $productId
+        RETURN p.productId AS productId, p.name AS name, p.description AS description, p.price AS price, p.category_id AS category_id
+        """
+        similar_products_result = await db.run(get_similar_products, categoryId=category_id, productId=product_id)
+
+        similar_products = []
+        async for record in similar_products_result:
+            similar_products.append(Product(
+                productId=record["productId"],
+                name=record["name"],
+                description=record["description"],
+                price=record["price"],
+                category_id=record["category_id"]
+            ))
+        
+        return similar_products
+
+    except HTTPException as err:
+        raise err 
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal server error occurred: {e}"
+        )
