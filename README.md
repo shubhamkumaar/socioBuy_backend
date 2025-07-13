@@ -1,7 +1,11 @@
 # SocioBuy Backend
 
-A social commerce platform backend built with FastAPI and Neo4j, featuring AI-powered product recommendations based on friend networks and social shopping behaviors.
+A social commerce platform backend built with FastAPI and Neo4j, featuring AI-powered product recommendations based on friend networks and social shopping behaviors. This backend powers the [SocioBuy Android App](https://github.com/shubhamkumaar/SocioBuy-App)
 
+## 📱 Complete SocioBuy Ecosystem
+
+- **🔧 Backend API** (This Repository): FastAPI + Neo4j + Gemini AI for social commerce recommendations
+- **📱 Android App**: [SocioBuy Android App](https://github.com/shubhamkumaar/SocioBuy-App) - Mobile frontend 
 ## 🚀 Features
 
 ### Core Functionality
@@ -178,6 +182,19 @@ The application uses JWT (JSON Web Tokens) for authentication:
 - Protected routes require valid JWT token
 - Passwords are hashed using bcrypt
 
+## 📱 Mobile Integration
+
+This backend seamlessly integrates with the **SocioBuy Android App** to provide:
+
+### Mobile-Optimized Features
+- **Fast Response Times**: Optimized queries for mobile consumption
+- **Offline Sync**: Support for offline cart and wishlist synchronization
+
+- **Social Sharing**: APIs for sharing products and purchases within friend networks
+
+### Cross-Platform Data
+- **Social Graph**: Shared friend networks and social commerce data
+
 ## 🌐 Social Commerce Features
 
 ### Friend Network Analysis
@@ -218,10 +235,12 @@ For production deployment:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Contact
+## 📞 Contact - Team Connect
 
-**Shubham Kumar**
-- GitHub: [@shubhamkumaar](https://github.com/shubhamkumaar)
+- **Shubham Kumar**  [@shubhamkumaar](https://github.com/shubhamkumaar)
+- **Kanishk Sangwan**  [@Kan1shak](https://github.com/Kan1shak)
+- **Ritvik Anand**  [@RitvikAnand583](https://github.com/RitvikAnand583)
+- **Sourabh Joshi**  [@Itachi2024](https://github.com/Itachi2024)
 
 ## 🙏 Acknowledgments
 

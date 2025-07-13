@@ -5,7 +5,7 @@ from router.order import router as order_router
 from router.product import router as product_router 
 from router.home import router as home_page
 from router.cart import router as cart_router
-app = FastAPI()
+app = FastAPI(prefix="/api")
 
 
 app.include_router(home_page)
