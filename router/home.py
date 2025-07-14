@@ -44,7 +44,7 @@ async def home(user:user_dependency,db:Session = Depends(get_db)):
     """
 
     query_home = """
-    CALL {
+    CALL () {
     // Friends
     MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
     RETURN f as person
@@ -71,7 +71,7 @@ RETURN productCategory, products_in_category[0..15] AS limitedProducts
     """
 
     query_cover = """
-    CALL {
+    CALL () {
     // Friends
     MATCH (u:User {phone: $phone})-[:FRIEND]->(f:User)
     RETURN f as person

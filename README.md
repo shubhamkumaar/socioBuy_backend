@@ -1,11 +1,11 @@
 # SocioBuy Backend
 
-A social commerce platform backend built with FastAPI and Neo4j, featuring AI-powered product recommendations based on friend networks and social shopping behaviors. This backend powers the [SocioBuy Android App](https://github.com/shubhamkumaar/SocioBuy-App)
+A social commerce platform backend built with FastAPI and Neo4j, featuring AI-powered product recommendations based on friend networks and social shopping behaviors. This backend powers the [SocioBuy Android App](https://github.com/shubhamkumaar/socioBuy_app)
 
 ## 📱 Complete SocioBuy Ecosystem
 
 - **🔧 Backend API** (This Repository): FastAPI + Neo4j + Gemini AI for social commerce recommendations
-- **📱 Android App**: [SocioBuy Android App](https://github.com/shubhamkumaar/SocioBuy-App) - Mobile frontend 
+- **📱 Android App**: [SocioBuy Android App](https://github.com/shubhamkumaar/socioBuy_app) - Mobile frontend 
 ## 🚀 Features
 
 ### Core Functionality
